@@ -1,0 +1,22 @@
+{
+  "name": "rental",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "cd client && npm install && npm run build",
+    "start": "cd server && npm start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mike-PG65/rental.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/mike-PG65/rental/issues"
+  },
+  "homepage": "https://github.com/mike-PG65/rental#readme"
+}

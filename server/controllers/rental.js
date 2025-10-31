@@ -73,6 +73,30 @@ router.get('/', async (req, res) => {
     }
 });
 
+router.get("/tenants", authMiddleware, async (req, res) => {
+  try {
+    // Find all rentals that currently have tenants
+   const rentals = await Rental.find({ tenantId: { $ne: null } })
+      .populate("tenantId", "name email") // Get tenant details
+      .populate("houseId", "houseNo") // Get house number
+      .lean(); // Make it plain JS object (faster)
+
+    // Transform results (optional cleanup)
+    const tenants = rentals.map(rental => ({
+      _id: rental.tenantId._id,
+      name: rental.tenantId.name,
+      email: rental.tenantId.email,
+      houseNo: rental.houseId?.houseNo || "N/A",
+    }));
+
+    res.status(200).json(tenants);
+  } catch (error) {
+    console.error("Error fetching tenants:", error);
+    res.status(500).json({ message: "Failed to fetch tenants" });
+  }
+});
+
+
 
 router.get("/tenant/:tenantId", authMiddleware, async (req, res) => {
   try {

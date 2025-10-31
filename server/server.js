@@ -6,6 +6,8 @@ const houseRoutes = require("./controllers/house");
 const userRoutes = require("./controllers/users");
 const rentalRoutes = require("./controllers/rental");
 const complaintRoutes = require("./controllers/complaints"); // ✅ must match the actual path!
+const messageRoutes = require("./controllers/message");
+
 
 dotenv.config();
 
@@ -14,7 +16,7 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: ["http://localhost:5173", "http://localhost:5174"],
     credentials: true,
   })
 );
@@ -28,6 +30,7 @@ app.use("/api/house", houseRoutes);
 app.use("/api/auth", userRoutes);
 app.use("/api/rental", rentalRoutes);
 app.use("/api/complaints", complaintRoutes); // ✅ consistent path
+app.use("/api/messages", messageRoutes);
 
 const runServer = async () => {
   await connDb();

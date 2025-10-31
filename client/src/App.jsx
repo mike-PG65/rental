@@ -9,6 +9,8 @@ import AuthForm from './pages/AuthForm'
 import ViewUsers from './pages/ViewUsers'
 import ViewHouses from './pages/ViewHouses'
 import ViewRentals from './pages/ViewRentals'
+import SendMessage from './pages/SendMessage'
+import SentMessages from './pages/SentMessages'
 
 const AppContent = () => {
   const location = useLocation();
@@ -34,6 +36,9 @@ const AppContent = () => {
           <Route path="/auth/login" element={<AuthForm />} />
           <Route path="/auth/register" element={<AuthForm />} />
           <Route path="/users" element={<ViewUsers />} />
+          <Route path="/message/send" element={<SendMessage />} />
+
+          <Route path="/messages" element={<SentMessages />} />
         </Routes>
       </div>
     </>

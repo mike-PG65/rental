@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, X, ChevronDown, UserCircle, LogOut } from "lucide-react";
 
@@ -6,13 +6,24 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [profileMenu, setProfileMenu] = useState(false);
+  const [user, setUser] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Load user from sessionStorage (if available)
+    const storedUser = sessionStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
   const handleLogout = () => {
     sessionStorage.removeItem("token");
+    sessionStorage.removeItem("user");
     navigate("/auth/login");
   };
 
+  // ✅ Base navigation items
   const nav = [
     { title: "Dashboard", path: "/" },
     {
@@ -38,6 +49,17 @@ const Navbar = () => {
     },
   ];
 
+  // ✅ Add "Messages" section only for admin users
+  if (user?.role === "admin") {
+    nav.push({
+      title: "Messages",
+      children: [
+        { name: "Send Message", path: "/message/send" },
+        { name: "View Messages", path: "/messages" },
+      ],
+    });
+  }
+
   return (
     <nav className="bg-gray-900 text-white shadow-lg fixed w-full z-50">
       <div className="container mx-auto px-6 py-4 flex justify-between items-center">
@@ -50,7 +72,6 @@ const Navbar = () => {
         <ul className="hidden md:flex space-x-8 items-center">
           {nav.map((sec, index) => (
             <li key={index} className="relative group">
-              {/* Top-level item */}
               {sec.path ? (
                 <Link
                   to={sec.path}
@@ -141,7 +162,7 @@ const Navbar = () => {
         </button>
       </div>
 
-      {/* Mobile Dropdown */}
+      {/* ✅ Mobile Dropdown */}
       {mobileOpen && (
         <div className="md:hidden bg-gray-800 px-6 pb-4 space-y-3">
           {nav.map((sec, index) => (

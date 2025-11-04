@@ -4,7 +4,8 @@ const authMiddleware = require("../middleware/auth");
 const router = express.Router()
 const Rental = require("../models/Rental")
 const Complaint = require('../models/Complaint')
-const User = require('../models/User')
+const User = require('../models/User');
+const adminMiddleware = require("../middleware/admin");
 
 router.post("/add", authMiddleware, async (req, res) => {
   try {
@@ -41,7 +42,7 @@ router.post("/add", authMiddleware, async (req, res) => {
 
 
 // ✅ Get all complaints (for admin or tenant dashboard)
-router.get("/", async (req, res) => {
+router.get("/all", authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const complaints = await Complaint.find()
       .populate({
@@ -104,6 +105,35 @@ router.get("/my", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Failed to fetch complaints" });
   }
 });
+
+// ✅ Admin: Get a single complaint by ID and mark as 'in progress' if pending
+router.get("/:id", authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const complaintId = req.params.id;
+
+    // Fetch complaint with details
+    const complaint = await Complaint.findById(complaintId)
+      .populate("rentalId", "amount nextPaymentDate paymentStatus")
+      .populate("houseId", "houseNo location")
+      .populate("tenantId", "name email");
+
+    if (!complaint) {
+      return res.status(404).json({ message: "Complaint not found" });
+    }
+
+    // ✅ If complaint is pending, update status to "in progress"
+    if (complaint.status === "pending") {
+      complaint.status = "in progress";
+      await complaint.save();
+    }
+
+    res.status(200).json({ complaint });
+  } catch (error) {
+    console.error("❌ Error fetching complaint:", error);
+    res.status(500).json({ message: "Failed to fetch complaint" });
+  }
+});
+
 
 // ✅ Get a single complaint by ID (for tenant)
 router.get("/my/:id", authMiddleware, async (req, res) => {

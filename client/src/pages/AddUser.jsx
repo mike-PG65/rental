@@ -29,14 +29,51 @@ const AddUser = () => {
   return (
     <FormContainer
       title={id ? "Edit User" : "Add User"}
-      apiUrl={id ? `http://localhost:4050/api/users/edit/${id}` : "http://localhost:4050/api/users/add"}
+      apiUrl={
+        id
+          ? `http://localhost:4050/api/auth/edit/${id}`
+          : "http://localhost:4050/api/auth/register"
+      }
       method={id ? "PUT" : "POST"}
       fields={[
-        { label: "Full Name", name: "name", type: "text", placeholder: "Enter name" },
-        { label: "Email", name: "email", type: "email", placeholder: "Enter email" },
-        { label: "Password", name: "password", type: "password", placeholder: "Enter password" },
+        {
+          label: "Full Name",
+          name: "name",
+          type: "text",
+          placeholder: "Enter full name",
+          required: true,
+        },
+        {
+          label: "Email",
+          name: "email",
+          type: "email",
+          placeholder: "Enter email address",
+          required: true,
+        },
+        {
+          label: "Phone Number",
+          name: "phone",
+          type: "tel",
+          placeholder: "Enter phone number",
+          required: true,
+        },
+        {
+          label: "Password",
+          name: "password",
+          type: "password",
+          placeholder: "Enter password",
+          required: !id, // Required only on new user
+        },
+        {
+          label: "Confirm Password",
+          name: "confirmPassword",
+          type: "password",
+          placeholder: "Confirm password",
+          required: !id,
+          confirm: true, // Custom flag so we know not to send it to backend
+        },
       ]}
-      onSuccess={() => navigate("/users")} // Redirect to users list after add/edit
+      onSuccess={() => navigate("/users")}
     />
   );
 };

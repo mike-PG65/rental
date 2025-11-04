@@ -11,6 +11,8 @@ import ViewHouses from './pages/ViewHouses'
 import ViewRentals from './pages/ViewRentals'
 import SendMessage from './pages/SendMessage'
 import SentMessages from './pages/SentMessages'
+import AllComplaints from './pages/ViewComplaints'
+import ComplaintDetails from './components/Complaint'
 
 const AppContent = () => {
   const location = useLocation();
@@ -37,8 +39,9 @@ const AppContent = () => {
           <Route path="/auth/register" element={<AuthForm />} />
           <Route path="/users" element={<ViewUsers />} />
           <Route path="/message/send" element={<SendMessage />} />
-
+          <Route path='/complaints' element={<AllComplaints/>}/>
           <Route path="/messages" element={<SentMessages />} />
+          <Route path='/complaints/:id' element={<ComplaintDetails/>}/>
         </Routes>
       </div>
     </>

@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 
 const FormContainer = ({
   title,
-  fields = [], // ✅ default to empty array to avoid "reading 'name'" error
+  fields = [],
   apiUrl,
   onSuccess,
   fetchHouses,
@@ -22,7 +22,6 @@ const FormContainer = ({
 
   const token = sessionStorage.getItem("token");
 
-  // ✅ Fetch houses
   useEffect(() => {
     if (fetchHouses) {
       axios
@@ -32,7 +31,6 @@ const FormContainer = ({
     }
   }, [fetchHouses, token]);
 
-  // ✅ Fetch users
   useEffect(() => {
     if (fetchUsers) {
       axios
@@ -42,7 +40,6 @@ const FormContainer = ({
     }
   }, [fetchUsers, token]);
 
-  // ✅ Update rentPrice if a house is selected
   useEffect(() => {
     if (formData.houseId) {
       const selectedHouse = houses.find((h) => h._id === formData.houseId);
@@ -87,50 +84,51 @@ const FormContainer = ({
     }
   };
 
-  // ✅ If there are no fields, show a simple message instead of crashing
   if (!fields || fields.length === 0) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-950 text-gray-300">
+      <div className="flex justify-center items-center min-h-screen bg-gray-50 text-gray-600">
         <p>No form fields provided.</p>
       </div>
     );
   }
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-950 p-6">
+    <div className="flex justify-center items-center min-h-screen bg-gray-50 p-6">
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="bg-gray-900 border border-gray-800 shadow-2xl rounded-2xl p-10 w-full max-w-3xl"
+        className="bg-white border border-gray-200 shadow-lg rounded-2xl p-10 w-full max-w-3xl"
       >
-        <h2 className="text-3xl font-bold text-white mb-8 text-center">
+        <h2 className="text-3xl font-bold text-gray-800 mb-8 text-center">
           {title}
         </h2>
 
         {successMsg && (
-          <div className="bg-green-700/20 border border-green-500 text-green-400 px-4 py-2 rounded-md mb-6 text-center font-medium">
+          <div className="bg-green-50 border border-green-400 text-green-700 px-4 py-2 rounded-md mb-6 text-center font-medium">
             {successMsg}
           </div>
         )}
         {errorMsg && (
-          <div className="bg-red-700/20 border border-red-500 text-red-400 px-4 py-2 rounded-md mb-6 text-center font-medium">
+          <div className="bg-red-50 border border-red-400 text-red-600 px-4 py-2 rounded-md mb-6 text-center font-medium">
             {errorMsg}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6">
           {fields.map((field, idx) => {
-            // ✅ House dropdown
+            // 🏠 House dropdown
             if (field.type === "select" && field.name === "houseId") {
               return (
                 <div key={idx}>
-                  <label className="font-semibold text-gray-300 mb-2 block">{field.label}</label>
+                  <label className="font-semibold text-gray-700 mb-2 block">
+                    {field.label}
+                  </label>
                   <select
                     name={field.name}
                     value={formData.houseId || ""}
                     onChange={handleChange}
-                    className="w-full bg-gray-800 text-gray-100 border border-gray-700 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full bg-gray-50 text-gray-800 border border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
                     required
                   >
                     <option value="">-- Select House --</option>
@@ -144,16 +142,18 @@ const FormContainer = ({
               );
             }
 
-            // ✅ User dropdown
+            // 👤 User dropdown
             if (field.type === "select" && field.name === "tenantId") {
               return (
                 <div key={idx}>
-                  <label className="font-semibold text-gray-300 mb-2 block">{field.label}</label>
+                  <label className="font-semibold text-gray-700 mb-2 block">
+                    {field.label}
+                  </label>
                   <select
                     name={field.name}
                     value={formData.tenantId || ""}
                     onChange={handleChange}
-                    className="w-full bg-gray-800 text-gray-100 border border-gray-700 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full bg-gray-50 text-gray-800 border border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
                     required
                   >
                     <option value="">-- Select User --</option>
@@ -167,34 +167,42 @@ const FormContainer = ({
               );
             }
 
-            // ✅ Rent Price (read-only)
+            // 💰 Rent Price (read-only)
             if (field.name === "rentPrice") {
               return (
                 <div key={idx}>
-                  <label className="font-semibold text-gray-300 mb-2 block">{field.label}</label>
+                  <label className="font-semibold text-gray-700 mb-2 block">
+                    {field.label}
+                  </label>
                   <input
                     type="text"
                     name="rentPrice"
-                    value={formData.rentPrice ? `KSh ${formData.rentPrice.toLocaleString()}` : ""}
+                    value={
+                      formData.rentPrice
+                        ? `KSh ${formData.rentPrice.toLocaleString()}`
+                        : ""
+                    }
                     readOnly
-                    className="w-full bg-gray-700 text-gray-100 border border-gray-600 px-4 py-3 rounded-lg focus:outline-none cursor-not-allowed"
+                    className="w-full bg-gray-100 text-gray-700 border border-gray-300 px-4 py-3 rounded-lg cursor-not-allowed"
                     placeholder="Rent price"
                   />
                 </div>
               );
             }
 
-            // ✅ Default input
+            // ✍️ Default input
             return (
               <div key={idx}>
-                <label className="font-semibold text-gray-300 mb-2 block">{field.label}</label>
+                <label className="font-semibold text-gray-700 mb-2 block">
+                  {field.label}
+                </label>
                 <input
                   type={field.type}
                   name={field.name}
                   value={formData[field.name] || ""}
                   onChange={handleChange}
                   placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-                  className="w-full bg-gray-800 text-gray-100 border border-gray-700 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full bg-gray-50 text-gray-800 border border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
                   required={field.type !== "password" || method === "POST"}
                 />
               </div>
@@ -206,7 +214,9 @@ const FormContainer = ({
               type="submit"
               disabled={loading}
               className={`px-12 py-3 rounded-lg font-semibold shadow-md transition-all duration-200 ${
-                loading ? "bg-gray-700 text-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 text-white"
+                loading
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700 text-white"
               }`}
             >
               {loading ? "Submitting..." : "Submit"}

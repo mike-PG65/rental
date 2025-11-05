@@ -18,7 +18,7 @@ app.use(
   cors({
     origin:  [
     "http://localhost:5173", // for local testing
-    "tenant-chi.vercel.app" // your Vercel URL
+    "https://tenant-chi.vercel.app" // your Vercel URL
   ],
     credentials: true,
   })

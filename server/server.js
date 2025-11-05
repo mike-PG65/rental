@@ -16,7 +16,7 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: "https://tenant-6adw3sx1q-michaels-projects-4409badb.vercel.app/",
+    origin: "https://tenant-6adw3sx1q-michaels-projects-4409badb.vercel.app",
     credentials: true,
   })
 );

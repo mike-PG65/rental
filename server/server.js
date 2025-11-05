@@ -16,7 +16,10 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: "https://tenant-6adw3sx1q-michaels-projects-4409badb.vercel.app",
+    origin:  [
+    "http://localhost:5173", // for local testing
+    "https://tenant-6adw3sx1q-michaels-projects-4409badb.vercel.app" // your Vercel URL
+  ],
     credentials: true,
   })
 );

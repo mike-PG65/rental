@@ -4,30 +4,33 @@ const User = require("../models/User");
 const authMiddleware = require("../middleware/auth");
 const jwt = require("jsonwebtoken");
 const adminMiddleware = require("../middleware/admin")
+const nodemailer = require("nodemailer");
+const {sendResetEmail}= require('../third/resetEmail')
+require("dotenv").config();
 
 const router = express.Router()
 
 router.post("/register", async (req, res) => {
-    try{
-        const {name, email, phone, password} = req.body
+  try {
+    const { name, email, phone, password } = req.body
 
-        const existingUser = await User.findOne({email});
-        if(existingUser) return res.status(400).json({error: "User already exists"})
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(400).json({ error: "User already exists" })
 
-        const hashedPassword = await bcrypt.hash(password, 10)
+    const hashedPassword = await bcrypt.hash(password, 10)
 
-        const user = new User({
-            name,
-            email,
-            phone,
-            password: hashedPassword
-        });
+    const user = new User({
+      name,
+      email,
+      phone,
+      password: hashedPassword
+    });
 
-        await user.save()
+    await user.save()
 
-        return res.status(201).json({message: `${name} you have been registered sucessefully`})
-  }catch(err){
-    return res.status(500).json({error: "Server error!!"})
+    return res.status(201).json({ message: `${name} you have been registered sucessefully` })
+  } catch (err) {
+    return res.status(500).json({ error: "Server error!!" })
   }
 })
 router.post("/login", async (req, res) => {
@@ -70,15 +73,15 @@ router.post("/login", async (req, res) => {
 
 
 router.get('/users', async (req, res) => {
-    try{
-        const users = await User.find().select("-password")
+  try {
+    const users = await User.find().select("-password")
 
-        if(!users) return res.status(404).json({error: "Users not found!!"})
+    if (!users) return res.status(404).json({ error: "Users not found!!" })
 
-        return res.status(200).json(users)
-    } catch(err){
-        return res.status(500).json({error: "Server error while finding the users!!"})
-    }
+    return res.status(200).json(users)
+  } catch (err) {
+    return res.status(500).json({ error: "Server error while finding the users!!" })
+  }
 });
 
 // router.get("/tenants", authMiddleware, async (req, res) => {
@@ -90,22 +93,104 @@ router.get('/users', async (req, res) => {
 //   }
 // });
 
+
+// ✅ FORGOT PASSWORD
+router.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user)
+      return res.status(404).json({ error: "User with this email not found" });
+
+    // Create JWT token valid for 15 minutes
+    const resetToken = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" }
+    );
+
+    // Construct reset URL (frontend URL)
+    const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+
+    // Create email transporter
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    // Send email
+    await transporter.sendMail({
+      from: '"Tenant Portal" <no-reply@tenantportal.com>',
+      to: email,
+      subject: "Reset Your Tenant Portal Password",
+      html: sendResetEmail
+        ? sendResetEmail(email, resetToken) // ✅ fixed variable name
+        : `
+          <h2>Password Reset</h2>
+          <p>Click the link below to reset your password:</p>
+          <a href="${resetUrl}" 
+             style="display:inline-block;background:#4f46e5;color:white;
+                    padding:10px 20px;border-radius:8px;text-decoration:none;">
+             Reset Password
+          </a>
+          <p>This link will expire in 15 minutes.</p>
+        `,
+    });
+
+    res.json({ message: "Password reset link sent to your email." });
+  } catch (err) {
+    console.error("Forgot password error:", err);
+    res.status(500).json({ error: "Failed to send reset email" });
+  }
+});
+
+// ✅ RESET PASSWORD (Verify token + update password)
+router.post("/reset-password/:token", async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  try {
+    // Verify the token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded.id);
+    if (!user)
+      return res.status(404).json({ error: "User not found or token invalid" });
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
+
+    await user.save();
+
+    res.json({ message: "Password reset successful!" });
+  } catch (err) {
+    console.error("Reset password error:", err);
+    res.status(400).json({ error: "Invalid or expired token" });
+  }
+});
+
+
 router.get("/:id", authMiddleware, async (req, res) => {
-    try{
-        const {id} = req.params
+  try {
+    const { id } = req.params
 
-        // if(req.user.role !== admin && req.user.id !== id)
-        //     return res.status(401).json({error: "Access denied!!"})
+    // if(req.user.role !== admin && req.user.id !== id)
+    //     return res.status(401).json({error: "Access denied!!"})
 
-        const user = await User.findById(id).select("-password")
+    const user = await User.findById(id).select("-password")
 
-        if(!user)
-            return res.status(404).json({error: "User not found!!"})
+    if (!user)
+      return res.status(404).json({ error: "User not found!!" })
 
-        res.status(200).json(user)
-    } catch(err){
-        return res.status(500).json({error: "Server error!!"})
-    }
+    res.status(200).json(user)
+  } catch (err) {
+    return res.status(500).json({ error: "Server error!!" })
+  }
 });
 
 
@@ -138,22 +223,22 @@ router.put("/edit/:id", authMiddleware, async (req, res) => {
 });
 
 router.delete("/delete/:id", adminMiddleware, async (req, res) => {
-    try{
-        const {id} = req.params
+  try {
+    const { id } = req.params
 
-        const user = await User.findById(id)
+    const user = await User.findById(id)
 
-        if(!user) 
-            return res.status(404).json({error: "User not found"})
+    if (!user)
+      return res.status(404).json({ error: "User not found" })
 
-        await User.findByIdAndDelete(id)
+    await User.findByIdAndDelete(id)
 
-        res.status(201).json({message: "User deleted sucessfully"})
+    res.status(201).json({ message: "User deleted sucessfully" })
 
-    } catch (err) {
+  } catch (err) {
     console.error("Delete user error:", err.message);
     res.status(500).json({ error: "Server error" });
-    }
+  }
 })
 
 const multer = require("multer");
@@ -199,18 +284,18 @@ router.patch(
 
 
 router.post("/complaints", async (req, res) => {
-    try{
-        const {message} = req.body
+  try {
+    const { message } = req.body
 
-        const user = await User.findById(req.user.id)
-        if(!user) return res.status(404).json({error: "User not found!!"})
+    const user = await User.findById(req.user.id)
+    if (!user) return res.status(404).json({ error: "User not found!!" })
 
-        user.complaints.push({message})
+    user.complaints.push({ message })
 
-        await user.save()
-    } catch(err){
-        return res.status(500).json({error: "Server error!!"})
-    }
+    await user.save()
+  } catch (err) {
+    return res.status(500).json({ error: "Server error!!" })
+  }
 })
 
 module.exports = router;

@@ -5,7 +5,7 @@ const authMiddleware = require("../middleware/auth");
 const jwt = require("jsonwebtoken");
 const adminMiddleware = require("../middleware/admin")
 const nodemailer = require("nodemailer");
-const {sendResetEmail}= require('../third/resetEmail')
+const sendResetEmail= require('../third/resetEmail')
 require("dotenv").config();
 
 const router = express.Router()

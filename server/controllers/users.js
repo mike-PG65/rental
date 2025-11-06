@@ -111,7 +111,7 @@ router.post("/forgot-password", async (req, res) => {
     );
 
     // Construct reset URL (frontend URL)
-    const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+    const resetUrl = `https://tenant-chi.vercel.app//reset-password/${resetToken}`;
 
     // Create email transporter
     const transporter = nodemailer.createTransport({

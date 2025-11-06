@@ -2,7 +2,7 @@
 const SibApiV3Sdk = require("sib-api-v3-sdk");
 
 const sendResetEmail = async (email, token) => {
-  const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+  const resetLink = `${process.env.FRONTEND_URL}reset-password/${token}`;
 
   const emailHTML = `
     <div style="font-family:Arial,sans-serif;">

@@ -97,3 +97,5 @@ const sendResetEmail = async (email, token) => {
   // send this HTML via your email service (e.g., nodemailer)
   return emailHTML;
 };
+
+module.exports = sendResetEmail

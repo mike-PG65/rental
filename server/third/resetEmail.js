@@ -25,7 +25,7 @@ const sendResetEmail = async (email, token) => {
     const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
     const sendSmtpEmail = {
       to: [{ email }],
-      sender: { name: "Tenant Portal", email: process.env.EMAIL_FROM },
+      sender: { name: "Admin", email: process.env.EMAIL_FROM },
       subject: "Reset Your Tenant Portal Password",
       htmlContent: emailHTML,
     };

@@ -103,37 +103,24 @@ router.post("/forgot-password", async (req, res) => {
     if (!user)
       return res.status(404).json({ error: "User with this email not found" });
 
+    // Create JWT token valid for 1 hour
     const resetToken = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: "15m" }
+      { expiresIn: "1h" }
     );
 
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-
-    const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: process.env.EMAIL_PORT,
-      secure: false, // true for port 465, false for 587
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    await transporter.sendMail({
-      from: '"Tenant Portal" <no-reply@tenantportal.com>',
-      to: email,
-      subject: "Reset Your Tenant Portal Password",
-      html: sendResetEmail(email, resetToken),
-    });
+    await sendResetEmail(email, resetToken);
 
     res.json({ message: "Password reset link sent to your email." });
   } catch (err) {
-    console.error("Forgot password error:", err);
+    console.error("Forgot password error:", err.message);
     res.status(500).json({ error: "Failed to send reset email" });
   }
 });
+
+module.exports = router;
+
 
 // ✅ RESET PASSWORD
 router.post("/reset-password/:token", async (req, res) => {

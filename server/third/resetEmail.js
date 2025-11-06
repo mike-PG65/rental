@@ -1,6 +1,8 @@
-// In your backend (e.g., /controllers/authController.js)
+// utils/sendResetEmail.js
+const nodemailer = require("nodemailer");
+
 const sendResetEmail = async (email, token) => {
-  const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+  const resetLink = `${process.env.FRONTEND_URL}reset-password/${token}`;
 
   const emailHTML = `
   <!DOCTYPE html>
@@ -94,8 +96,32 @@ const sendResetEmail = async (email, token) => {
   </html>
   `;
 
-  // send this HTML via your email service (e.g., nodemailer)
-  return emailHTML;
+  try {
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: process.env.EMAIL_PORT,
+      secure: false, // Brevo uses STARTTLS, not SSL
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+      tls: {
+        rejectUnauthorized: false, // avoids TLS issues on Render
+      },
+    });
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM,
+      to: email,
+      subject: "Reset Your Tenant Portal Password",
+      html: emailHTML,
+    });
+
+    console.log(`✅ Password reset email sent to ${email}`);
+  } catch (error) {
+    console.error("❌ Error sending password reset email:", error.message);
+    throw new Error("Failed to send reset email");
+  }
 };
 
-module.exports = sendResetEmail
+module.exports = sendResetEmail;

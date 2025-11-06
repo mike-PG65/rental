@@ -103,17 +103,14 @@ router.post("/forgot-password", async (req, res) => {
     if (!user)
       return res.status(404).json({ error: "User with this email not found" });
 
-    // Create JWT token valid for 15 minutes
     const resetToken = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: "15m" }
     );
 
-    // Construct reset URL (frontend URL)
-    const resetUrl = `https://tenant-chi.vercel.app//reset-password/${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
-    // Create email transporter
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -122,23 +119,11 @@ router.post("/forgot-password", async (req, res) => {
       },
     });
 
-    // Send email
     await transporter.sendMail({
       from: '"Tenant Portal" <no-reply@tenantportal.com>',
       to: email,
       subject: "Reset Your Tenant Portal Password",
-      html: sendResetEmail
-        ? sendResetEmail(email, resetToken) // ✅ fixed variable name
-        : `
-          <h2>Password Reset</h2>
-          <p>Click the link below to reset your password:</p>
-          <a href="${resetUrl}" 
-             style="display:inline-block;background:#4f46e5;color:white;
-                    padding:10px 20px;border-radius:8px;text-decoration:none;">
-             Reset Password
-          </a>
-          <p>This link will expire in 15 minutes.</p>
-        `,
+      html: sendResetEmail(email, resetToken),
     });
 
     res.json({ message: "Password reset link sent to your email." });
@@ -148,23 +133,20 @@ router.post("/forgot-password", async (req, res) => {
   }
 });
 
-// ✅ RESET PASSWORD (Verify token + update password)
+// ✅ RESET PASSWORD
 router.post("/reset-password/:token", async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
 
   try {
-    // Verify the token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
     const user = await User.findById(decoded.id);
+
     if (!user)
       return res.status(404).json({ error: "User not found or token invalid" });
 
-    // Hash new password
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(password, salt);
-
     await user.save();
 
     res.json({ message: "Password reset successful!" });
@@ -173,6 +155,9 @@ router.post("/reset-password/:token", async (req, res) => {
     res.status(400).json({ error: "Invalid or expired token" });
   }
 });
+
+module.exports = router;
+
 
 
 router.get("/:id", authMiddleware, async (req, res) => {

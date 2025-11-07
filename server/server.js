@@ -7,6 +7,7 @@ const userRoutes = require("./controllers/users");
 const rentalRoutes = require("./controllers/rental");
 const complaintRoutes = require("./controllers/complaints"); // ✅ must match the actual path!
 const messageRoutes = require("./controllers/message");
+const paymentRoutes = require("./controllers/payment")
 
 
 dotenv.config();
@@ -35,6 +36,7 @@ app.use("/api/auth", userRoutes);
 app.use("/api/rental", rentalRoutes);
 app.use("/api/complaints", complaintRoutes); // ✅ consistent path
 app.use("/api/messages", messageRoutes);
+app.use("/api/payment", paymentRoutes);
 
 const runServer = async () => {
   await connDb();

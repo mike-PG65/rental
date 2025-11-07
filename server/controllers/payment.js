@@ -6,47 +6,70 @@ const Rental = require("../models/Rental");
 const adminMiddleware = require("../middleware/admin");
 const router = express.Router()
 
-router.post('/add', authMiddleware, async (req, res) => {
-    try {
-        const {rentalId, amount, method, transactionId } = req.body;
-        console.log("Auth header:", req.headers.authorization);
+router.post("/add", authMiddleware, async (req, res) => {
+  try {
+    const { rentalId, amount, method, transactionId } = req.body;
+    console.log("Auth header:", req.headers.authorization);
 
-        const tenantId = req.user.id;
+    const tenantId = req.user.id;
 
-        // Find the rental to know how much rent is due
-        const rental = await Rental.findById(rentalId);
-        if (!rental) {
-            return res.status(404).json({ message: "Rental not found" });
-        }
-
-        // Calculate balance: amount paid - rent amount
-        const balance = amount - rental.amount;
-
-        // Create payment record
-        const payment = await Payment.create({
-            tenantId,
-            rentalId,
-            amount,
-            balance,
-            method,
-            transactionId,
-            status: method === "cash" ? "pending" : "successful", // cash pending approval
-        });
-
-        // Update rental payment status if needed
-        if (method !== "cash" && balance >= 0) {
-            rental.paymentStatus = "paid";
-            await rental.save();
-        }
-
-        res.status(201).json({
-            message: "Payment recorded successfully",
-            payment,
-        });
-    } catch (err) {
-        console.error("Payment creation error:", err);
-        res.status(500).json({ message: "Error creating payment", error: err.message });
+    // 🔹 Find the rental (with populated house info)
+    const rental = await Rental.findById(rentalId).populate("houseId", "houseNo price");
+    if (!rental) {
+      return res.status(404).json({ message: "Rental not found" });
     }
+
+    // 🔹 Calculate balance: amount paid - rent amount
+    const balance = amount - rental.amount;
+
+    // 🔹 Create payment record
+    const payment = await Payment.create({
+      tenantId,
+      rentalId,
+      amount,
+      balance,
+      method,
+      transactionId,
+      status: method === "cash" ? "pending" : "successful", // cash = pending approval
+    });
+
+    // 🔹 Update rental payment status if fully paid
+    if (method !== "cash" && balance >= 0) {
+      rental.paymentStatus = "paid";
+      await rental.save();
+    }
+
+    // 🔹 Fetch the saved payment with populated tenant and house info
+    const populatedPayment = await Payment.findById(payment._id)
+      .populate("tenantId", "name email")
+      .populate({
+        path: "rentalId",
+        populate: { path: "houseId", select: "houseNo" },
+      });
+
+    // 🔹 Create frontend-friendly response
+    const responsePayment = {
+      _id: populatedPayment._id,
+      tenantName: populatedPayment.tenantId?.name || "Unknown",
+      houseName: populatedPayment.rentalId?.houseId?.houseNo || "N/A",
+      method: populatedPayment.method,
+      amount: populatedPayment.amount,
+      balance: populatedPayment.balance,
+      transactionId: populatedPayment.transactionId,
+      status: populatedPayment.status,
+      paymentDate: populatedPayment.paymentDate,
+    };
+
+    res.status(201).json({
+      message: "Payment recorded successfully",
+      payment: responsePayment,
+    });
+  } catch (err) {
+    console.error("Payment creation error:", err);
+    res
+      .status(500)
+      .json({ message: "Error creating payment", error: err.message });
+  }
 });
 
 router.put("/approve/:paymentId", adminMiddleware, async (req, res) => {

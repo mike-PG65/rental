@@ -11,7 +11,7 @@ router.post('/add', authMiddleware, async (req, res) => {
         const {rentalId, amount, method, transactionId } = req.body;
         console.log("Auth header:", req.headers.authorization);
 
-        const tenantId = req.user._id;
+        const tenantId = req.user.id;
 
         // Find the rental to know how much rent is due
         const rental = await Rental.findById(rentalId);

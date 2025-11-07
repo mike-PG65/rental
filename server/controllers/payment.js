@@ -72,7 +72,80 @@ router.post("/add", authMiddleware, async (req, res) => {
   }
 });
 
-router.put("/approve/:paymentId", adminMiddleware, async (req, res) => {
+// 🧾 Admin - Get all payments
+router.get("/all", authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const payments = await Payment.find()
+      .populate("tenantId", "name email")
+      .populate({
+        path: "rentalId",
+        populate: {
+          path: "houseId",
+          select: "houseNo price1",
+        },
+      })
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({ payments });
+  } catch (err) {
+    console.error("Error fetching all payments:", err);
+    res.status(500).json({
+      message: "Failed to fetch all payments",
+      error: err.message,
+    });
+  }
+});
+
+// 👤 Tenant - Get their own payments
+router.get("/my", authMiddleware, async (req, res) => {
+  try {
+    const tenantId = req.user.id;
+
+    const payments = await Payment.find({ tenantId })
+      .populate("tenantId", "name email")
+      .populate({
+        path: "rentalId",
+        populate: {
+          path: "houseId",
+          select: "houseNo price availability",
+        },
+      })
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({ payments });
+  } catch (err) {
+    console.error("Error fetching tenant payments:", err);
+    res.status(500).json({
+      message: "Failed to fetch tenant payments",
+      error: err.message,
+    });
+  }
+});
+
+// 👤 Tenant - Get their own payments
+router.get("/my", authMiddleware, async (req, res) => {
+  try {
+    const tenantId = req.user.id;
+
+    const payments = await Payment.find({ tenantId })
+      .populate("tenantId", "name email")
+      .populate({
+        path: "rentalId",
+        select: "houseNumber amount",
+      })
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({ payments });
+  } catch (err) {
+    console.error("Error fetching tenant payments:", err);
+    res.status(500).json({
+      message: "Failed to fetch tenant payments",
+      error: err.message,
+    });
+  }
+});
+
+router.put("/approve/:paymentId", authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const { paymentId } = req.params;
         const adminId = req.user.id; // assuming you use auth middleware

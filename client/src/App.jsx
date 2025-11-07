@@ -13,6 +13,7 @@ import SendMessage from './pages/SendMessage'
 import SentMessages from './pages/SentMessages'
 import AllComplaints from './pages/ViewComplaints'
 import ComplaintDetails from './components/Complaint'
+import PaymentsList from './pages/PaymentsList'
 
 const AppContent = () => {
   const location = useLocation();
@@ -42,6 +43,7 @@ const AppContent = () => {
           <Route path='/complaints' element={<AllComplaints/>}/>
           <Route path="/messages" element={<SentMessages />} />
           <Route path='/complaints/:id' element={<ComplaintDetails/>}/>
+          <Route path="/payments" element={<PaymentsList />} />
         </Routes>
       </div>
     </>

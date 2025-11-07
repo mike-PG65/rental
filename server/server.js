@@ -5,8 +5,7 @@ const dotenv = require("dotenv");
 const http = require("http");
 const { Server } = require("socket.io");
 
-dotenv.config();
-
+// Routes
 const houseRoutes = require("./controllers/house");
 const userRoutes = require("./controllers/users");
 const rentalRoutes = require("./controllers/rental");
@@ -14,27 +13,30 @@ const complaintRoutes = require("./controllers/complaints");
 const messageRoutes = require("./controllers/message");
 const paymentRoutes = require("./controllers/payment");
 
+dotenv.config();
 const app = express();
 app.use(express.json());
 
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",
-      "https://tenant-chi.vercel.app",
-      "http://localhost:5174",
-    ],
-    credentials: true,
-  })
-);
+// ✅ CORS setup
+const corsOptions = {
+  origin: [
+    "http://localhost:5173",
+    "https://tenant-chi.vercel.app",
+    "http://localhost:5174"
+  ],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
+app.use(cors(corsOptions));
 
-// ✅ Request logger
+// Request logger
 app.use((req, res, next) => {
   console.log("➡️ Incoming Request:", req.method, req.originalUrl);
   next();
 });
 
-// ✅ Register routes
+// Register routes
 app.use("/api/house", houseRoutes);
 app.use("/api/auth", userRoutes);
 app.use("/api/rental", rentalRoutes);
@@ -45,27 +47,32 @@ app.use("/api/payment", paymentRoutes);
 const runServer = async () => {
   await connDb();
 
+  // ✅ HTTP server
   const server = http.createServer(app);
-app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://tenant-chi.vercel.app",
-    "http://localhost:5174"
-  ],
-  methods: ["GET","POST","PUT","DELETE","OPTIONS","PATCH","HEAD"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-}));
 
-// Also respond to OPTIONS
-app.options("*", cors());
+  // ✅ Socket.IO instance
+  const io = new Server(server, {
+    cors: {
+      origin: [
+        "http://localhost:5173",
+        "https://tenant-chi.vercel.app",
+        "http://localhost:5174"
+      ],
+      methods: ["GET", "POST", "PUT"],
+      credentials: true,
+    },
+  });
 
+  // ✅ Make io accessible in controllers
+  app.set("io", io);
+
+  // Handle connections
   io.on("connection", (socket) => {
-    console.log("⚡ Socket connected:", socket.id);
+    console.log("⚡ New socket connected:", socket.id);
 
     socket.on("registerTenant", (tenantId) => {
-      socket.join(tenantId.toString());
-      console.log(`🏠 Tenant ${tenantId} joined private room`);
+      socket.join(tenantId);
+      console.log(`🏠 Tenant ${tenantId} joined their private room`);
     });
 
     socket.on("disconnect", () => {
@@ -73,12 +80,8 @@ app.options("*", cors());
     });
   });
 
-  app.set("io", io); // make io available in all routes
-
   const PORT = process.env.PORT || 4050;
-  server.listen(PORT, () =>
-    console.log(`✅ Server running on port ${PORT}`)
-  );
+  server.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
 };
 
 runServer();

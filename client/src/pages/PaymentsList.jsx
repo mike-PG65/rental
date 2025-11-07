@@ -7,14 +7,14 @@ export default function PaymentsList() {
   const [status, setStatus] = useState({ message: "", type: "" });
   const [updating, setUpdating] = useState(null); // track which payment is being updated
 
-  const BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:4050";
+  const BASE_URL = "http://localhost:4050/api";
   const token = sessionStorage.getItem("token");
 
   // Fetch payments
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const { data } = await axios.get(`${BASE_URL}/api/payment/all`, {
+        const { data } = await axios.get(`${BASE_URL}/payment/all`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -41,7 +41,7 @@ export default function PaymentsList() {
       setUpdating(id);
 
       const { data } = await axios.put(
-        `${BASE_URL}/api/payment/approve/${id}`,
+        `${BASE_URL}/payment/approve/${id}`,
         { status: "successful" },
         {
           headers: { Authorization: `Bearer ${token}` },

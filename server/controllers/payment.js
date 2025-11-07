@@ -9,6 +9,7 @@ const router = express.Router()
 router.post('/add', authMiddleware, async (req, res) => {
     try {
         const { tenantId, rentalId, amount, method, transactionId } = req.body;
+        console.log("Auth header:", req.headers.authorization);
 
         // Find the rental to know how much rent is due
         const rental = await Rental.findById(rentalId);

@@ -2,6 +2,10 @@ const express = require("express");
 const cors = require("cors");
 const connDb = require("./config/db");
 const dotenv = require("dotenv");
+const http = require("http");
+const { Server } = require("socket.io");
+
+// ✅ Routes
 const houseRoutes = require("./controllers/house");
 const userRoutes = require("./controllers/users");
 const rentalRoutes = require("./controllers/rental");
@@ -19,17 +23,19 @@ app.use(
     origin: [
       "http://localhost:5173",
       "https://tenant-chi.vercel.app",
-      "http://localhost:5174",
+      "http://localhost:5174"
     ],
     credentials: true,
   })
 );
 
+// ✅ Request logger
 app.use((req, res, next) => {
   console.log("➡️ Incoming Request:", req.method, req.originalUrl);
   next();
 });
 
+// ✅ Register routes
 app.use("/api/house", houseRoutes);
 app.use("/api/auth", userRoutes);
 app.use("/api/rental", rentalRoutes);
@@ -37,47 +43,47 @@ app.use("/api/complaints", complaintRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/payment", paymentRoutes);
 
-// ✅ SOCKET.IO SETUP
-const http = require("http");
-const { Server } = require("socket.io");
+const runServer = async () => {
+  await connDb();
 
-const server = http.createServer(app);
+  // ✅ Create HTTP server
+  const server = http.createServer(app);
 
-const io = new Server(server, {
-  cors: {
-    origin: [
-      "http://localhost:5173",
-      "https://tenant-chi.vercel.app",
-      "http://localhost:5174",
-    ],
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
-});
-
-// ✅ Keep track of connected tenants
-const connectedTenants = new Map();
-
-io.on("connection", (socket) => {
-  console.log("⚡ New socket connected:", socket.id);
-
-  // When tenant registers their ID
-  socket.on("registerTenant", (tenantId) => {
-    connectedTenants.set(tenantId, socket.id);
-    console.log(`🏠 Tenant registered: ${tenantId} (socket: ${socket.id})`);
+  // ✅ Initialize Socket.IO
+  const io = new Server(server, {
+    cors: {
+      origin: [
+        "http://localhost:5173",
+        "https://tenant-chi.vercel.app",
+        "http://localhost:5174"
+      ],
+      methods: ["GET", "POST", "PUT"],
+      credentials: true,
+    },
   });
 
-  // On disconnect
-  socket.on("disconnect", () => {
-    for (const [tenantId, id] of connectedTenants.entries()) {
-      if (id === socket.id) connectedTenants.delete(tenantId);
-    }
-    console.log("❌ Socket disconnected:", socket.id);
+  // ✅ Handle client connections
+  io.on("connection", (socket) => {
+    console.log("⚡ New socket connected:", socket.id);
+
+    // register tenant
+    socket.on("registerTenant", (tenantId) => {
+      socket.join(tenantId);
+      console.log(`🏠 Tenant ${tenantId} joined their private room`);
+    });
+
+    socket.on("disconnect", () => {
+      console.log("❌ Socket disconnected:", socket.id);
+    });
   });
-});
 
-const PORT = process.env.PORT || 4050;
-server.listen(PORT, () => console.log(`✅ Server is running on port ${PORT}`));
+  // ✅ Attach io to app (so controllers can emit)
+  app.set("io", io);
 
-// ✅ Export for use in other files
-module.exports = { io, connectedTenants };
+  const PORT = process.env.PORT || 4050;
+  server.listen(PORT, () =>
+    console.log(`✅ Server is running on port ${PORT}`)
+  );
+};
+
+runServer();

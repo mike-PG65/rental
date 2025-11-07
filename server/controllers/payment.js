@@ -157,7 +157,7 @@ router.get("/my", authMiddleware, async (req, res) => {
 });
 
 // ✅ Admin approves cash payments
-router.put("/approve/:paymentId", authMiddleware, adminMiddleware, async (req, res) => {
+router.put("/approve/:paymentId", authMiddleware, async (req, res) => {
   try {
     console.log("🟢 Route hit: /approve/:paymentId");
 

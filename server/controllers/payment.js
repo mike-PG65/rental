@@ -195,6 +195,4 @@ router.put("/approve/:paymentId", authMiddleware, adminMiddleware, async (req, r
   }
 });
 
-
-
-module.exports = router
+module.exports = router;

@@ -119,9 +119,6 @@ router.post("/forgot-password", async (req, res) => {
   }
 });
 
-module.exports = router;
-
-
 // ✅ RESET PASSWORD
 router.post("/reset-password/:token", async (req, res) => {
   const { token } = req.params;
@@ -144,10 +141,6 @@ router.post("/reset-password/:token", async (req, res) => {
     res.status(400).json({ error: "Invalid or expired token" });
   }
 });
-
-module.exports = router;
-
-
 
 router.get("/:id", authMiddleware, async (req, res) => {
   try {

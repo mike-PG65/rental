@@ -6,10 +6,12 @@ const Rental = require("../models/Rental");
 const adminMiddleware = require("../middleware/admin");
 const router = express.Router()
 
-router.post('/add', authMiddleware, async (req, res) => {
+router.post('/add', async (req, res) => {
     try {
-        const { tenantId, rentalId, amount, method, transactionId } = req.body;
+        const {rentalId, amount, method, transactionId } = req.body;
         console.log("Auth header:", req.headers.authorization);
+
+        const tenantId = req.user._id;
 
         // Find the rental to know how much rent is due
         const rental = await Rental.findById(rentalId);

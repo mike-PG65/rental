@@ -5,15 +5,14 @@ const dotenv = require("dotenv");
 const http = require("http");
 const { Server } = require("socket.io");
 
-// ✅ Routes
+dotenv.config();
+
 const houseRoutes = require("./controllers/house");
 const userRoutes = require("./controllers/users");
 const rentalRoutes = require("./controllers/rental");
 const complaintRoutes = require("./controllers/complaints");
 const messageRoutes = require("./controllers/message");
 const paymentRoutes = require("./controllers/payment");
-
-dotenv.config();
 
 const app = express();
 app.use(express.json());
@@ -23,7 +22,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "https://tenant-chi.vercel.app",
-      "http://localhost:5174"
+      "http://localhost:5174",
     ],
     credentials: true,
   })
@@ -46,30 +45,26 @@ app.use("/api/payment", paymentRoutes);
 const runServer = async () => {
   await connDb();
 
-  // ✅ Create HTTP server
   const server = http.createServer(app);
 
-  // ✅ Initialize Socket.IO
   const io = new Server(server, {
     cors: {
       origin: [
         "http://localhost:5173",
         "https://tenant-chi.vercel.app",
-        "http://localhost:5174"
+        "http://localhost:5174",
       ],
       methods: ["GET", "POST", "PUT"],
       credentials: true,
     },
   });
 
-  // ✅ Handle client connections
   io.on("connection", (socket) => {
-    console.log("⚡ New socket connected:", socket.id);
+    console.log("⚡ Socket connected:", socket.id);
 
-    // register tenant
     socket.on("registerTenant", (tenantId) => {
-      socket.join(tenantId);
-      console.log(`🏠 Tenant ${tenantId} joined their private room`);
+      socket.join(tenantId.toString());
+      console.log(`🏠 Tenant ${tenantId} joined private room`);
     });
 
     socket.on("disconnect", () => {
@@ -77,12 +72,11 @@ const runServer = async () => {
     });
   });
 
-  // ✅ Attach io to app (so controllers can emit)
-  app.set("io", io);
+  app.set("io", io); // make io available in all routes
 
   const PORT = process.env.PORT || 4050;
   server.listen(PORT, () =>
-    console.log(`✅ Server is running on port ${PORT}`)
+    console.log(`✅ Server running on port ${PORT}`)
   );
 };
 

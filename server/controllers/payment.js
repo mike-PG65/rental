@@ -155,12 +155,13 @@ router.get("/my", authMiddleware, async (req, res) => {
     });
   }
 });
+
+// ✅ Admin approves cash payments
 router.put("/approve/:paymentId", authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { paymentId } = req.params;
     const adminId = req.user.id;
 
-    // 1️⃣ Find payment
     const payment = await Payment.findById(paymentId);
     if (!payment) return res.status(404).json({ message: "Payment not found" });
 
@@ -168,15 +169,12 @@ router.put("/approve/:paymentId", authMiddleware, adminMiddleware, async (req, r
       return res.status(400).json({ message: "Only cash payments require approval" });
     }
 
-    // 2️⃣ Update payment status
     payment.status = "successful";
     payment.approvedBy = adminId;
     await payment.save();
 
-    // 3️⃣ Update rental
     await Rental.findByIdAndUpdate(payment.rentalId, { paymentStatus: "paid" });
 
-    // 4️⃣ Populate for frontend
     const populatedPayment = await Payment.findById(payment._id)
       .populate("tenantId", "name email")
       .populate({
@@ -184,9 +182,9 @@ router.put("/approve/:paymentId", authMiddleware, adminMiddleware, async (req, r
         populate: { path: "houseId", select: "houseNo price" },
       });
 
-    // 5️⃣ Transform the structure to match frontend expectations
     const responsePayment = {
       _id: populatedPayment._id,
+      tenantId: populatedPayment.tenantId?._id,
       tenantName: populatedPayment.tenantId?.name || "Unknown",
       houseName: populatedPayment.rentalId?.houseId?.houseNo || "N/A",
       method: populatedPayment.method,
@@ -195,21 +193,20 @@ router.put("/approve/:paymentId", authMiddleware, adminMiddleware, async (req, r
       transactionId: populatedPayment.transactionId,
       status: populatedPayment.status,
       paymentDate: populatedPayment.paymentDate,
-      tenantId: populatedPayment.tenantId?._id,
     };
 
-    // 6️⃣ Emit socket event
     const io = req.app.get("io");
-    if (io && payment.tenantId) {
-      io.to(payment.tenantId.toString()).emit("paymentApproved", responsePayment);
-      console.log(`📢 Payment approval event sent to tenant ${payment.tenantId}`);
+
+    if (io && populatedPayment.tenantId?._id) {
+      const tenantRoom = populatedPayment.tenantId._id.toString();
+      io.to(tenantRoom).emit("paymentApproved", responsePayment);
+      console.log(`📢 Sent paymentApproved event to tenant ${tenantRoom}`);
     } else {
-      console.log("⚠️ No io instance or tenantId found for this payment");
+      console.log("⚠️ No tenantId found — event not emitted");
     }
 
-    // 7️⃣ Respond
     res.status(200).json({
-      message: "✅ Cash payment approved and rental marked as paid",
+      message: "✅ Payment approved successfully",
       payment: responsePayment,
     });
   } catch (error) {
@@ -217,6 +214,8 @@ router.put("/approve/:paymentId", authMiddleware, adminMiddleware, async (req, r
     res.status(500).json({ message: "Server error" });
   }
 });
+
+module.exports = router;
 
 
 

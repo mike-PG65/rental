@@ -6,7 +6,7 @@ const Rental = require("../models/Rental");
 const adminMiddleware = require("../middleware/admin");
 const router = express.Router()
 
-router.post('/add', async (req, res) => {
+router.post('/add', authMiddleware, async (req, res) => {
     try {
         const {rentalId, amount, method, transactionId } = req.body;
         console.log("Auth header:", req.headers.authorization);

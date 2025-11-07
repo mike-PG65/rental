@@ -46,18 +46,19 @@ const runServer = async () => {
   await connDb();
 
   const server = http.createServer(app);
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://tenant-chi.vercel.app",
+    "http://localhost:5174"
+  ],
+  methods: ["GET","POST","PUT","DELETE","OPTIONS","PATCH","HEAD"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+}));
 
-  const io = new Server(server, {
-    cors: {
-      origin: [
-        "http://localhost:5173",
-        "https://tenant-chi.vercel.app",
-        "http://localhost:5174",
-      ],
-      methods: ["GET", "POST", "PUT"],
-      credentials: true,
-    },
-  });
+// Also respond to OPTIONS
+app.options("*", cors());
 
   io.on("connection", (socket) => {
     console.log("⚡ Socket connected:", socket.id);

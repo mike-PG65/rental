@@ -9,9 +9,9 @@ const router = express.Router()
 router.post("/add", authMiddleware, async (req, res) => {
   try {
     const { rentalId, amount, method, transactionId } = req.body;
-    console.log("Auth header:", req.headers.authorization);
-
     const tenantId = req.user.id;
+
+    console.log("💳 New payment attempt by tenant:", tenantId);
 
     // 🔹 Find the rental (with populated house info)
     const rental = await Rental.findById(rentalId).populate("houseId", "houseNo price");
@@ -19,10 +19,10 @@ router.post("/add", authMiddleware, async (req, res) => {
       return res.status(404).json({ message: "Rental not found" });
     }
 
-    // 🔹 Calculate balance: amount paid - rent amount
+    // 🔹 Calculate balance
     const balance = amount - rental.amount;
 
-    // 🔹 Create payment record
+    // 🔹 Create payment
     const payment = await Payment.create({
       tenantId,
       rentalId,
@@ -30,16 +30,16 @@ router.post("/add", authMiddleware, async (req, res) => {
       balance,
       method,
       transactionId,
-      status: method === "cash" ? "pending" : "successful", // cash = pending approval
+      status: method === "cash" ? "pending" : "successful",
     });
 
-    // 🔹 Update rental payment status if fully paid
+    // 🔹 Update rental status if paid
     if (method !== "cash" && balance >= 0) {
       rental.paymentStatus = "paid";
       await rental.save();
     }
 
-    // 🔹 Fetch the saved payment with populated tenant and house info
+    // 🔹 Populate for frontend
     const populatedPayment = await Payment.findById(payment._id)
       .populate("tenantId", "name email")
       .populate({
@@ -47,7 +47,6 @@ router.post("/add", authMiddleware, async (req, res) => {
         populate: { path: "houseId", select: "houseNo" },
       });
 
-    // 🔹 Create frontend-friendly response
     const responsePayment = {
       _id: populatedPayment._id,
       tenantName: populatedPayment.tenantId?.name || "Unknown",
@@ -58,19 +57,31 @@ router.post("/add", authMiddleware, async (req, res) => {
       transactionId: populatedPayment.transactionId,
       status: populatedPayment.status,
       paymentDate: populatedPayment.paymentDate,
+      tenantId: populatedPayment.tenantId?._id, // ✅ include tenantId
     };
+
+    // ✅ Emit instant update if payment was successful (e.g. M-Pesa)
+    if (method !== "cash" && responsePayment.status === "successful") {
+      const io = req.app.get("io");
+      if (io && tenantId) {
+        io.to(tenantId.toString()).emit("paymentApproved", responsePayment);
+        console.log(`📢 Instant success emitted to tenant ${tenantId}`);
+      }
+    }
 
     res.status(201).json({
       message: "Payment recorded successfully",
       payment: responsePayment,
     });
   } catch (err) {
-    console.error("Payment creation error:", err);
-    res
-      .status(500)
-      .json({ message: "Error creating payment", error: err.message });
+    console.error("💥 Payment creation error:", err);
+    res.status(500).json({
+      message: "Error creating payment",
+      error: err.message,
+    });
   }
 });
+
 
 // 🧾 Admin - Get all payments
 router.get("/all", authMiddleware, adminMiddleware, async (req, res) => {

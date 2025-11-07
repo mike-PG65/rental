@@ -161,33 +161,51 @@ router.put("/approve/:paymentId", authMiddleware, adminMiddleware, async (req, r
     const { paymentId } = req.params;
     const adminId = req.user.id;
 
-    // find payment
-    const payment = await Payment.findById(paymentId);
+    // Find payment
+    let payment = await Payment.findById(paymentId);
     if (!payment) return res.status(404).json({ message: "Payment not found" });
 
     if (payment.method !== "cash")
       return res.status(400).json({ message: "Only cash payments require approval" });
 
-    // mark as successful
+    // Mark as successful
     payment.status = "successful";
     payment.approvedBy = adminId;
     await payment.save();
 
-    // update rental payment status
+    // Update rental payment status
     await Rental.findByIdAndUpdate(payment.rentalId, { paymentStatus: "paid" });
 
-    // ✅ Emit event to tenant using Socket.IO
-    const io = req.app.get("io"); // get io instance from app
+    // ✅ Populate payment before sending to frontend
+    const populatedPayment = await Payment.findById(payment._id)
+      .populate("tenantId", "name email")
+      .populate({
+        path: "rentalId",
+        populate: { path: "houseId", select: "houseNo" },
+      });
+
+    const responsePayment = {
+      _id: populatedPayment._id,
+      tenantName: populatedPayment.tenantId?.name || "Unknown",
+      houseName: populatedPayment.rentalId?.houseId?.houseNo || "N/A",
+      method: populatedPayment.method,
+      amount: populatedPayment.amount,
+      balance: populatedPayment.balance,
+      transactionId: populatedPayment.transactionId,
+      status: populatedPayment.status,
+      paymentDate: populatedPayment.paymentDate,
+    };
+
+    // Emit to tenant
+    const io = req.app.get("io");
     if (io && payment.tenantId) {
-      io.to(payment.tenantId.toString()).emit("paymentApproved", payment);
+      io.to(payment.tenantId.toString()).emit("paymentApproved", responsePayment);
       console.log(`📢 Payment approval event sent to tenant ${payment.tenantId}`);
-    } else {
-      console.log("⚠️ No io instance or tenantId found for this payment");
     }
 
     res.status(200).json({
       message: "Cash payment approved and rental marked as paid",
-      payment,
+      payment: responsePayment,
     });
   } catch (error) {
     console.error("Approval error:", error);

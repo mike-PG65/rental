@@ -5,9 +5,9 @@ const dotenv = require("dotenv");
 const houseRoutes = require("./controllers/house");
 const userRoutes = require("./controllers/users");
 const rentalRoutes = require("./controllers/rental");
-const complaintRoutes = require("./controllers/complaints"); // ✅ must match the actual path!
+const complaintRoutes = require("./controllers/complaints");
 const messageRoutes = require("./controllers/message");
-const paymentRoutes = require("./controllers/payment")
+const paymentRoutes = require("./controllers/payment");
 
 dotenv.config();
 
@@ -17,9 +17,9 @@ app.use(express.json());
 app.use(
   cors({
     origin: [
-      "http://localhost:5173", // for local testing
+      "http://localhost:5173",
       "https://tenant-chi.vercel.app",
-      "http://localhost:5174" // your Vercel URL
+      "http://localhost:5174",
     ],
     credentials: true,
   })
@@ -33,44 +33,51 @@ app.use((req, res, next) => {
 app.use("/api/house", houseRoutes);
 app.use("/api/auth", userRoutes);
 app.use("/api/rental", rentalRoutes);
-app.use("/api/complaints", complaintRoutes); // ✅ consistent path
+app.use("/api/complaints", complaintRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/payment", paymentRoutes);
 
-// ✅ Add Socket.IO setup (without removing anything above)
+// ✅ SOCKET.IO SETUP
 const http = require("http");
 const { Server } = require("socket.io");
 
-const runServer = async () => {
-  await connDb();
+const server = http.createServer(app);
 
-  // Create HTTP server from Express
-  const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: [
+      "http://localhost:5173",
+      "https://tenant-chi.vercel.app",
+      "http://localhost:5174",
+    ],
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
 
-  // Attach Socket.IO to server
-  const io = new Server(server, {
-    cors: {
-      origin: [
-        "http://localhost:5173",
-        "https://tenant-chi.vercel.app",
-        "http://localhost:5174"
-      ],
-      methods: ["GET", "POST"],
-      credentials: true,
-    },
+// ✅ Keep track of connected tenants
+const connectedTenants = new Map();
+
+io.on("connection", (socket) => {
+  console.log("⚡ New socket connected:", socket.id);
+
+  // When tenant registers their ID
+  socket.on("registerTenant", (tenantId) => {
+    connectedTenants.set(tenantId, socket.id);
+    console.log(`🏠 Tenant registered: ${tenantId} (socket: ${socket.id})`);
   });
 
-  // Handle connections
-  io.on("connection", (socket) => {
-    console.log("⚡ New socket connected:", socket.id);
-
-    socket.on("disconnect", () => {
-      console.log("❌ Socket disconnected:", socket.id);
-    });
+  // On disconnect
+  socket.on("disconnect", () => {
+    for (const [tenantId, id] of connectedTenants.entries()) {
+      if (id === socket.id) connectedTenants.delete(tenantId);
+    }
+    console.log("❌ Socket disconnected:", socket.id);
   });
+});
 
-  const PORT = process.env.PORT || 4050;
-  server.listen(PORT, () => console.log(`✅ Server is running on port ${PORT}`));
-};
+const PORT = process.env.PORT || 4050;
+server.listen(PORT, () => console.log(`✅ Server is running on port ${PORT}`));
 
-runServer();
+// ✅ Export for use in other files
+module.exports = { io, connectedTenants };

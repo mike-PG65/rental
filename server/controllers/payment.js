@@ -146,34 +146,44 @@ router.get("/my", authMiddleware, async (req, res) => {
 });
 
 router.put("/approve/:paymentId", authMiddleware, adminMiddleware, async (req, res) => {
-    try {
-        const { paymentId } = req.params;
-        const adminId = req.user.id; // assuming you use auth middleware
+  try {
+    const { paymentId } = req.params;
+    const adminId = req.user.id;
 
-        // find payment
-        const payment = await Payment.findById(paymentId);
-        if (!payment) return res.status(404).json({ message: "Payment not found" });
+    // find payment
+    const payment = await Payment.findById(paymentId);
+    if (!payment) return res.status(404).json({ message: "Payment not found" });
 
-        if (payment.method !== "cash")
-            return res.status(400).json({ message: "Only cash payments require approval" });
+    if (payment.method !== "cash")
+      return res.status(400).json({ message: "Only cash payments require approval" });
 
-        // mark as successful
-        payment.status = "successful";
-        payment.approvedBy = adminId;
-        await payment.save();
+    // mark as successful
+    payment.status = "successful";
+    payment.approvedBy = adminId;
+    await payment.save();
 
-        // update rental payment status
-        await Rental.findByIdAndUpdate(payment.rentalId, { paymentStatus: "paid" });
+    // update rental payment status
+    await Rental.findByIdAndUpdate(payment.rentalId, { paymentStatus: "paid" });
 
-        res.status(200).json({
-            message: "Cash payment approved and rental marked as paid",
-            payment,
-        });
-    } catch (error) {
-        console.error("Approval error:", error);
-        res.status(500).json({ message: "Server error" });
+    // ✅ Emit event to tenant using Socket.IO
+    const io = req.app.get("io"); // get io instance from app
+    if (io && payment.tenantId) {
+      io.to(payment.tenantId.toString()).emit("paymentApproved", payment);
+      console.log(`📢 Payment approval event sent to tenant ${payment.tenantId}`);
+    } else {
+      console.log("⚠️ No io instance or tenantId found for this payment");
     }
+
+    res.status(200).json({
+      message: "Cash payment approved and rental marked as paid",
+      payment,
+    });
+  } catch (error) {
+    console.error("Approval error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
 });
+
 
 
 module.exports = router

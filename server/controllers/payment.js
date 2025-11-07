@@ -197,6 +197,9 @@ router.put("/approve/:paymentId", authMiddleware, adminMiddleware, async (req, r
 
     const io = req.app.get("io");
 
+    console.log("🧩 io exists:", !!io);
+console.log("👤 tenantId:", populatedPayment.tenantId?._id);
+
     if (io && populatedPayment.tenantId?._id) {
       const tenantRoom = populatedPayment.tenantId._id.toString();
       io.to(tenantRoom).emit("paymentApproved", responsePayment);

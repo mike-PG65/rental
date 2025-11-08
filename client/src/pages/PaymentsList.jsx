@@ -81,11 +81,10 @@ export default function PaymentsList() {
 
       {status.message && (
         <div
-          className={`p-3 mb-4 rounded-lg text-center ${
-            status.type === "error"
+          className={`p-3 mb-4 rounded-lg text-center ${status.type === "error"
               ? "bg-red-100 text-red-700"
               : "bg-green-100 text-green-700"
-          }`}
+            }`}
         >
           {status.message}
         </div>
@@ -102,6 +101,7 @@ export default function PaymentsList() {
                 <th className="py-3 px-5 text-left">House</th>
                 <th className="py-3 px-5 text-left">Method</th>
                 <th className="py-3 px-5 text-left">Amount</th>
+                <th className="py-3 px-5 text-left">Month</th>s
                 <th className="py-3 px-5 text-left">Status</th>
                 <th className="py-3 px-5 text-left">Date</th>
                 <th className="py-3 px-5 text-left">Action</th>
@@ -133,16 +133,18 @@ export default function PaymentsList() {
                     Ksh {p.amount?.toLocaleString()}
                   </td>
 
+                  {/* Month */}
+                  <td className="py-3 px-5 text-gray-600">{p.month || "-"}</td>
+
                   {/* Status */}
                   <td className="py-3 px-5">
                     <span
-                      className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                        p.status === "successful"
+                      className={`px-3 py-1 rounded-full text-sm font-semibold ${p.status === "successful"
                           ? "bg-green-100 text-green-700"
                           : p.status === "pending"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
                     >
                       {p.status}
                     </span>
@@ -162,11 +164,10 @@ export default function PaymentsList() {
                       <button
                         onClick={() => handleUpdateStatus(p._id)}
                         disabled={updating === p._id}
-                        className={`px-4 py-1 rounded-lg text-sm font-semibold text-white transition ${
-                          updating === p._id
+                        className={`px-4 py-1 rounded-lg text-sm font-semibold text-white transition ${updating === p._id
                             ? "bg-gray-400 cursor-not-allowed"
                             : "bg-blue-600 hover:bg-blue-700"
-                        }`}
+                          }`}
                       >
                         {updating === p._id
                           ? "Updating..."

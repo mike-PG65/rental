@@ -6,25 +6,21 @@ const Rental = require("../models/Rental");
 const adminMiddleware = require("../middleware/admin");
 const router = express.Router()
 
+
 router.post("/add", authMiddleware, async (req, res) => {
   try {
-    const { rentalId, amount, method, transactionId } = req.body;
+    const { rentalId, amount, method, transactionId, month } = req.body;
     const tenantId = req.user.id;
 
-    console.log("💳 New payment attempt by tenant:", tenantId);
+    if (!month) return res.status(400).json({ message: "Month is required" });
 
-    // 🔹 Find the rental with house info
     const rental = await Rental.findById(rentalId).populate("houseId", "houseNo price");
-    if (!rental) {
-      return res.status(404).json({ message: "Rental not found" });
-    }
+    if (!rental) return res.status(404).json({ message: "Rental not found" });
 
-    // 🔹 Calculate remaining balance using previous payments
     const previousPayments = await Payment.find({ rentalId, tenantId });
     const totalPaid = previousPayments.reduce((sum, p) => sum + p.amount, 0);
     const balance = Math.max(rental.amount - (totalPaid + amount), 0);
 
-    // 🔹 Create payment
     const payment = await Payment.create({
       tenantId,
       rentalId,
@@ -32,22 +28,18 @@ router.post("/add", authMiddleware, async (req, res) => {
       balance,
       method,
       transactionId,
+      month, // store month
       status: method === "cash" ? "pending" : "successful",
     });
 
-    // 🔹 Update rental if fully paid
     if (method !== "cash" && balance === 0) {
       rental.paymentStatus = "paid";
       await rental.save();
     }
 
-    // 🔹 Populate for frontend
     const populatedPayment = await Payment.findById(payment._id)
       .populate("tenantId", "name email")
-      .populate({
-        path: "rentalId",
-        populate: { path: "houseId", select: "houseNo" },
-      });
+      .populate({ path: "rentalId", populate: { path: "houseId", select: "houseNo" } });
 
     const responsePayment = {
       _id: populatedPayment._id,
@@ -59,28 +51,19 @@ router.post("/add", authMiddleware, async (req, res) => {
       transactionId: populatedPayment.transactionId,
       status: populatedPayment.status,
       paymentDate: populatedPayment.paymentDate,
+      month: populatedPayment.month, // include month in response
       tenantId: populatedPayment.tenantId?._id,
     };
 
-    // ✅ Emit instant success if not cash
     if (method !== "cash" && responsePayment.status === "successful") {
       const io = req.app.get("io");
-      if (io && tenantId) {
-        io.to(tenantId.toString()).emit("paymentApproved", responsePayment);
-        console.log(`📢 Instant success emitted to tenant ${tenantId}`);
-      }
+      if (io && tenantId) io.to(tenantId.toString()).emit("paymentApproved", responsePayment);
     }
 
-    res.status(201).json({
-      message: "Payment recorded successfully",
-      payment: responsePayment,
-    });
+    res.status(201).json({ message: "Payment recorded successfully", payment: responsePayment });
   } catch (err) {
     console.error("💥 Payment creation error:", err);
-    res.status(500).json({
-      message: "Error creating payment",
-      error: err.message,
-    });
+    res.status(500).json({ message: "Error creating payment", error: err.message });
   }
 });
 

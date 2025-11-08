@@ -146,6 +146,29 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+
+// 👤 Get latest payment for tenant
+router.get("/latest/:tenantId", authMiddleware, async (req, res) => {
+  try {
+    const { tenantId } = req.params;
+
+    const payment = await Payment.findOne({ tenantId })
+      .sort({ createdAt: -1 })
+      .populate("tenantId", "name email")
+      .populate({
+        path: "rentalId",
+        populate: { path: "houseId", select: "houseNo" },
+      });
+
+    // Return 200 with payment or null if none
+    res.status(200).json({ payment: payment || null });
+  } catch (err) {
+    console.error("Error fetching latest payment:", err);
+    res.status(500).json({ message: "Failed to fetch latest payment", error: err.message });
+  }
+});
+
 // ✅ Admin approves cash payments
 router.put("/approve/:paymentId", authMiddleware, async (req, res) => {
   try {

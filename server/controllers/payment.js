@@ -13,14 +13,14 @@ router.post("/add", authMiddleware, async (req, res) => {
 
     console.log("💳 New payment attempt by tenant:", tenantId);
 
-    // 🔹 Find the rental (with populated house info)
+    // 🔹 Find the rental with house info
     const rental = await Rental.findById(rentalId).populate("houseId", "houseNo price");
     if (!rental) {
       return res.status(404).json({ message: "Rental not found" });
     }
 
-    // 🔹 Calculate balance
-    const balance = amount - rental.amount;
+    // 🔹 Calculate remaining balance
+    const balance = Math.max(rental.amount - amount, 0);
 
     // 🔹 Create payment
     const payment = await Payment.create({
@@ -33,8 +33,8 @@ router.post("/add", authMiddleware, async (req, res) => {
       status: method === "cash" ? "pending" : "successful",
     });
 
-    // 🔹 Update rental status if paid
-    if (method !== "cash" && balance >= 0) {
+    // 🔹 Update rental if fully paid
+    if (method !== "cash" && balance === 0) {
       rental.paymentStatus = "paid";
       await rental.save();
     }
@@ -57,10 +57,10 @@ router.post("/add", authMiddleware, async (req, res) => {
       transactionId: populatedPayment.transactionId,
       status: populatedPayment.status,
       paymentDate: populatedPayment.paymentDate,
-      tenantId: populatedPayment.tenantId?._id, // ✅ include tenantId
+      tenantId: populatedPayment.tenantId?._id,
     };
 
-    // ✅ Emit instant update if payment was successful (e.g. M-Pesa)
+    // ✅ Emit instant success if not cash
     if (method !== "cash" && responsePayment.status === "successful") {
       const io = req.app.get("io");
       if (io && tenantId) {
@@ -81,6 +81,7 @@ router.post("/add", authMiddleware, async (req, res) => {
     });
   }
 });
+
 
 
 // 🧾 Admin - Get all payments

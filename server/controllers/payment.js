@@ -19,8 +19,10 @@ router.post("/add", authMiddleware, async (req, res) => {
       return res.status(404).json({ message: "Rental not found" });
     }
 
-    // 🔹 Calculate remaining balance
-    const balance = Math.max(rental.amount - amount, 0);
+    // 🔹 Calculate remaining balance using previous payments
+    const previousPayments = await Payment.find({ rentalId, tenantId });
+    const totalPaid = previousPayments.reduce((sum, p) => sum + p.amount, 0);
+    const balance = Math.max(rental.amount - (totalPaid + amount), 0);
 
     // 🔹 Create payment
     const payment = await Payment.create({

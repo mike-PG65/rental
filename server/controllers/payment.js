@@ -133,29 +133,18 @@ router.get("/my", authMiddleware, async (req, res) => {
   }
 });
 
-// 👤 Tenant - Get their own payments
-router.get("/my", authMiddleware, async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
-    const tenantId = req.user.id;
-
-    const payments = await Payment.find({ tenantId })
-      .populate("tenantId", "name email")
-      .populate({
-        path: "rentalId",
-        select: "houseNumber amount",
-      })
-      .sort({ createdAt: -1 });
-
-    res.status(200).json({ payments });
-  } catch (err) {
-    console.error("Error fetching tenant payments:", err);
-    res.status(500).json({
-      message: "Failed to fetch tenant payments",
-      error: err.message,
-    });
+    const payment = await Payment.findById(req.params.id);
+    if (!payment) {
+      return res.status(404).json({ message: "Payment not found" });
+    }
+    res.json({ payment });
+  } catch (error) {
+    console.error("Error fetching payment by ID:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
-
 // ✅ Admin approves cash payments
 router.put("/approve/:paymentId", authMiddleware, async (req, res) => {
   try {

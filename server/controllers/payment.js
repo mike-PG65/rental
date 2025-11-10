@@ -21,6 +21,8 @@ router.post("/add", authMiddleware, async (req, res) => {
     const totalPaid = previousPayments.reduce((sum, p) => sum + p.amount, 0);
     const balance = Math.max(rental.amount - (totalPaid + amount), 0);
 
+    
+
     const payment = await Payment.create({
       tenantId,
       rentalId,

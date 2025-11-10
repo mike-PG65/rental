@@ -12,7 +12,8 @@ import {
   ClipboardList,
   MessageSquare,
   AlertCircle,
-} from "lucide-react";
+  DollarSign,
+} from "lucide-react"; // Added DollarSign for Payments
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -36,11 +37,7 @@ const Navbar = () => {
 
   // Navigation structure (with icons)
   const nav = [
-    {
-      title: "Dashboard",
-      path: "/",
-      icon: <Home size={18} className="text-blue-600" />,
-    },
+    { title: "Dashboard", path: "/", icon: <Home size={18} className="text-blue-600" /> },
     {
       title: "Users",
       icon: <Users size={18} className="text-blue-600" />,
@@ -65,6 +62,8 @@ const Navbar = () => {
         { name: "View Rentals", path: "/rentals" },
       ],
     },
+    // ✅ Payments link
+    { title: "Payments", path: "/payments", icon: <DollarSign size={18} className="text-blue-600" /> },
   ];
 
   // Admin-only sections
@@ -88,10 +87,7 @@ const Navbar = () => {
     <nav className="bg-white shadow-sm border-b border-gray-100 fixed w-full z-50">
       <div className="container mx-auto px-6 py-3 flex justify-between items-center">
         {/* Logo */}
-        <Link
-          to="/"
-          className="text-2xl font-bold text-gray-800 flex items-center gap-2"
-        >
+        <Link to="/" className="text-2xl font-bold text-gray-800 flex items-center gap-2">
           🏢 <span className="text-blue-600">Gonye's</span>
         </Link>
 
@@ -116,10 +112,7 @@ const Navbar = () => {
               )}
 
               {sec.children && (
-                <ul
-                  className="absolute left-0 mt-2 bg-white border border-gray-100 text-sm min-w-[200px] rounded-lg shadow-lg 
-                  opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200"
-                >
+                <ul className="absolute left-0 mt-2 bg-white border border-gray-100 text-sm min-w-[200px] rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                   {sec.children.map((child, i) => (
                     <li key={i}>
                       <Link
@@ -144,15 +137,8 @@ const Navbar = () => {
                   className="flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-full hover:bg-gray-200 transition"
                 >
                   <UserCircle size={20} className="text-gray-700" />
-                  <span className="text-gray-800 font-medium">
-                    {user?.name || "Admin"}
-                  </span>
-                  <ChevronDown
-                    size={16}
-                    className={`transition-transform ${
-                      profileMenu ? "rotate-180" : ""
-                    }`}
-                  />
+                  <span className="text-gray-800 font-medium">{user?.name || "Admin"}</span>
+                  <ChevronDown size={16} className={`transition-transform ${profileMenu ? "rotate-180" : ""}`} />
                 </button>
 
                 {profileMenu && (
@@ -189,10 +175,7 @@ const Navbar = () => {
         </ul>
 
         {/* Mobile Menu Button */}
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden text-gray-800"
-        >
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden text-gray-800">
           {mobileOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
@@ -214,9 +197,7 @@ const Navbar = () => {
               ) : (
                 <div>
                   <button
-                    onClick={() =>
-                      setOpenDropdown(openDropdown === index ? null : index)
-                    }
+                    onClick={() => setOpenDropdown(openDropdown === index ? null : index)}
                     className="flex justify-between w-full items-center py-2 hover:text-blue-600"
                   >
                     <div className="flex items-center gap-2">
@@ -225,9 +206,7 @@ const Navbar = () => {
                     </div>
                     <ChevronDown
                       size={18}
-                      className={`transition-transform ${
-                        openDropdown === index ? "rotate-180" : ""
-                      }`}
+                      className={`transition-transform ${openDropdown === index ? "rotate-180" : ""}`}
                     />
                   </button>
 
@@ -255,11 +234,7 @@ const Navbar = () => {
           <div className="border-t border-gray-200 pt-3 mt-3">
             {user ? (
               <>
-                <Link
-                  to="/profile"
-                  className="block py-2 hover:text-blue-600"
-                  onClick={() => setMobileOpen(false)}
-                >
+                <Link to="/profile" className="block py-2 hover:text-blue-600" onClick={() => setMobileOpen(false)}>
                   Profile
                 </Link>
                 <button
@@ -270,11 +245,7 @@ const Navbar = () => {
                 </button>
               </>
             ) : (
-              <Link
-                to="/auth/login"
-                className="block py-2 hover:text-blue-600"
-                onClick={() => setMobileOpen(false)}
-              >
+              <Link to="/auth/login" className="block py-2 hover:text-blue-600" onClick={() => setMobileOpen(false)}>
                 Login
               </Link>
             )}

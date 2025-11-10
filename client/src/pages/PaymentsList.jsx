@@ -7,7 +7,8 @@ export default function PaymentsList() {
   const [status, setStatus] = useState({ message: "", type: "" });
   const [updating, setUpdating] = useState(null); // track which payment is being updated
 
-  const BASE_URL = "http://localhost:4050/api";
+  const BASE_URL = import.meta.env.VITE_BASE_URL
+
   const token = sessionStorage.getItem("token");
 
   // Fetch payments

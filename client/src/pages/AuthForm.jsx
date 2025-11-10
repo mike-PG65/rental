@@ -16,6 +16,8 @@ const AuthForm = () => {
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
 
+   const apiUrl = import.meta.env.VITE_BASE_URL
+
   const toggleForm = () => {
     setIsLogin(!isLogin);
     setMessage("");
@@ -43,8 +45,8 @@ const AuthForm = () => {
 
     try {
       const endpoint = isLogin
-        ? "http://localhost:4050/api/auth/login"
-        : "http://localhost:4050/api/auth/register";
+        ? `${apiUrl}/auth/login`
+        : `${apiUrl}/auth/register`;
 
       const payload = {
         name: formData.name,
